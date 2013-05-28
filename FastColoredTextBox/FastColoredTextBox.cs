@@ -123,10 +123,10 @@ namespace FastColoredTextBoxNS
         {
             //register type provider
             TypeDescriptionProvider prov = TypeDescriptor.GetProvider(GetType());
-            object theProvider =
-                prov.GetType().GetField("Provider", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(prov);
-            if (theProvider.GetType() != typeof (FCTBDescriptionProvider))
-                TypeDescriptor.AddProvider(new FCTBDescriptionProvider(GetType()), GetType());
+			//object theProvider =
+            //    	prov.GetType().GetField("Provider", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(prov);
+            //if (theProvider.GetType() != typeof (FCTBDescriptionProvider))
+            //    TypeDescriptor.AddProvider(new FCTBDescriptionProvider(GetType()), GetType());
             //drawing optimization
             SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             SetStyle(ControlStyles.UserPaint, true);
@@ -2672,12 +2672,18 @@ namespace FastColoredTextBoxNS
 
             return new SizeF(sz2.Width - sz3.Width + 1, /*sz2.Height*/font.Height);
         }
+#if __MonoCS__
 
+		public static IntPtr ImmGetContext(IntPtr hWnd)						{ return (IntPtr)null; }
+		public static IntPtr ImmAssociateContext(IntPtr hWnd, IntPtr hIMC)	{ return (IntPtr)null; }
+
+#else
         [DllImport("Imm32.dll")]
         public static extern IntPtr ImmGetContext(IntPtr hWnd);
 
         [DllImport("Imm32.dll")]
         public static extern IntPtr ImmAssociateContext(IntPtr hWnd, IntPtr hIMC);
+#endif
 
         protected override void WndProc(ref Message m)
         {
@@ -4174,6 +4180,14 @@ namespace FastColoredTextBoxNS
             return base.IsInputKey(keyData);
         }
 
+#if __MonoCS__
+
+		private static bool CreateCaret(IntPtr hWnd, int hBitmap, int nWidth, int nHeight) { return true; }
+        private static bool SetCaretPos(int x, int y){ return true; }
+        private static bool DestroyCaret()			{ return true; }
+        private static bool ShowCaret(IntPtr hWnd)	{ return true; }
+        private static bool HideCaret(IntPtr hWnd)	{ return true; }
+#else
         [DllImport("User32.dll")]
         private static extern bool CreateCaret(IntPtr hWnd, int hBitmap, int nWidth, int nHeight);
 
@@ -4188,6 +4202,7 @@ namespace FastColoredTextBoxNS
 
         [DllImport("User32.dll")]
         private static extern bool HideCaret(IntPtr hWnd);
+#endif
 
         protected override void OnPaintBackground(PaintEventArgs e)
         {
@@ -4218,7 +4233,7 @@ namespace FastColoredTextBoxNS
             Brush indentBrush = new SolidBrush(IndentBackColor);
             Brush paddingBrush = new SolidBrush(PaddingBackColor);
             Brush currentLineBrush =
-                new SolidBrush(Color.FromArgb(CurrentLineColor.A == 255 ? 50 : CurrentLineColor.A, CurrentLineColor));
+                new SolidBrush(Color.FromArgb(CurrentLineColor.A == (byte)255 ? (byte)50 : CurrentLineColor.A, CurrentLineColor));
             //draw padding area
             var textAreaRect = TextAreaRect;
             //top
@@ -4795,7 +4810,8 @@ namespace FastColoredTextBoxNS
 
                 DoScrollVertical(mouseWheelScrollLinesSetting, e.Delta);
 
-                ((HandledMouseEventArgs)e).Handled = true;
+                //((HandledMouseEventArgs)e).Handled = true;
+				//MouseEventArgs -> HandledMouseEventArgs throws an exception in mono :(
             }
 
             DeactivateMiddleClickScrollingMode();
